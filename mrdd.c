@@ -79,7 +79,7 @@ static int send_message(int sd, void *buf, size_t len)
 	compose_addr((struct sockaddr_in *)&dest, MC_ALL_SNOOPERS);
 	num = sendto(sd, buf, len, 0, &dest, sizeof(dest));
 	if (num < 0)
-		err(1, "Can't send Membership report message.");
+		err(1, "Cannot send Membership report message.");
 }
 
 int main(void)
@@ -91,21 +91,21 @@ int main(void)
 
 	sd = socket(AF_INET, SOCK_RAW, IPPROTO_IGMP);
 	if (sd < 0)
-		err(1, "Can't open socket");
+		err(1, "Cannot open socket");
 
 	val = 1;
 	rc = setsockopt(sd, IPPROTO_IP, IP_MULTICAST_TTL, &val, sizeof(val));
 	if (rc < 0)
-		err(1, "Can't set TTL");
+		err(1, "Cannot set TTL");
 
 	loop = 0;
 	rc = setsockopt(sd, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop));
 	if (rc < 0)
-		err(1, "Can't disable MC loop");
+		err(1, "Cannot disable MC loop");
 
 	rc = setsockopt(sd, IPPROTO_IP, IP_OPTIONS, &ra, sizeof(ra));
 	if (rc < 0)
-		err(1, "Can't set IP OPTIONS");
+		err(1, "Cannot set IP OPTIONS");
 
 	memset(&igmp, 0, sizeof(igmp));
 	igmp.igmp_type = IGMP_MRDISC_ANNOUNCE;
