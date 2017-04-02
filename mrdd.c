@@ -73,6 +73,7 @@ static unsigned short in_cksum (unsigned short *addr, int len)
 
 static int send_message(int sd, void *buf, size_t len)
 {
+#if 1
 	size_t num;
 	struct sockaddr dest;
 
@@ -80,6 +81,49 @@ static int send_message(int sd, void *buf, size_t len)
 	num = sendto(sd, buf, len, 0, &dest, sizeof(dest));
 	if (num < 0)
 		err(1, "Cannot send Membership report message.");
+#else
+	ssize_t num;
+	struct iovec iov[1];
+	struct msghdr msg;
+	struct cmsghdr *cmsg;
+	struct in_pktinfo *ipi;
+	struct sockaddr dest;
+        union {
+                char cmsg[CMSG_SPACE(sizeof(struct in_pktinfo))];
+	} u;
+        iov[0].iov_base = buf;
+        iov[0].iov_len = len;
+
+	compose_addr((struct sockaddr_in *)&dest, MC_ALL_SNOOPERS);
+	memset(&msg, 0, sizeof(msg));
+        msg.msg_name = (void *)&dest;
+        msg.msg_namelen = sizeof(struct sockaddr_in);
+
+	msg.msg_control    = &u;
+	msg.msg_controllen = sizeof(u);
+        msg.msg_iov = iov;
+        msg.msg_iovlen = 1;
+
+	cmsg = CMSG_FIRSTHDR(&msg);
+	if (!cmsg)
+		err(1, "Wut?");
+	cmsg->cmsg_level = SOL_SOCKET;
+	cmsg->cmsg_type  = IP_PKTINFO;
+	cmsg->cmsg_len   = CMSG_LEN(sizeof(ipi));
+
+	/* Initialize the payload: */
+	ipi = (struct in_pktinfo *)CMSG_DATA(cmsg);
+	memset(ipi, 0, sizeof(struct in_pktinfo));
+	ipi->ipi_ifindex     = 5;
+//	ipi->ipi_addr.s_addr = inet_addr(MC_ALL_SNOOPERS);
+
+	/* Sum of the length of all control messages in the buffer: */
+	msg.msg_controllen = cmsg->cmsg_len;
+
+	num = sendmsg(sd, &msg, 0);
+	if (num < 0)
+		err(1, "Cannot send Membership report message.");
+#endif
 }
 
 int main(void)
