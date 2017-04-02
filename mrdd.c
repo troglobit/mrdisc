@@ -71,13 +71,22 @@ static unsigned short in_cksum (unsigned short *addr, int len)
    return answer;
 }
 
+static int send_message(int sd, void *buf, size_t len)
+{
+	size_t num;
+	struct sockaddr dest;
+
+	compose_addr((struct sockaddr_in *)&dest, MC_ALL_SNOOPERS);
+	num = sendto(sd, buf, len, 0, &dest, sizeof(dest));
+	if (num < 0)
+		err(1, "Can't send Membership report message.");
+}
+
 int main(void)
 {
 	char loop;
 	int sd, val, rc;
-	size_t num;
 	struct igmp igmp;
-	struct sockaddr dest;
 	unsigned char ra[4] = { IPOPT_RA, 0x04, 0x00, 0x00 };
 
 	sd = socket(AF_INET, SOCK_RAW, IPPROTO_IGMP);
@@ -98,17 +107,13 @@ int main(void)
 	if (rc < 0)
 		err(1, "Can't set IP OPTIONS");
 
-	compose_addr((struct sockaddr_in *)&dest, MC_ALL_SNOOPERS);
-
 	memset(&igmp, 0, sizeof(igmp));
 	igmp.igmp_type = IGMP_MRDISC_ANNOUNCE;
 	igmp.igmp_code = 20;	/* 4-180 sec, default 20 sec */
 	igmp.igmp_cksum = in_cksum((unsigned short *)&igmp, sizeof(igmp));
 
 	while (1) {
-		num = sendto(sd, &igmp, sizeof(igmp), 0, &dest, sizeof(dest));
-		if (num < 0)
-			err(1, "Can't send Membership report message.");
+		send_message(sd, &igmp, sizeof(igmp));
 		sleep(20);
 	}
 
