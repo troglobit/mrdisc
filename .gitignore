@@ -1,1 +1,4 @@
-/mrdd
+*~
+*.o
+core
+mrdd
