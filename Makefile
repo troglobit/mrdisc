@@ -1,9 +1,9 @@
-EXEC = mrdd
+EXEC = mrdisc
 CFLAGS = -Og -g
 
 all: $(EXEC)
 
-mrdd: mrdd.o
+mrdisc: mrdisc.o
 
 clean:
 	$(RM) $(EXEC)
