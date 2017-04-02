@@ -1,4 +1,5 @@
 EXEC = mrdd
+CFLAGS = -Og -g
 
 all: $(EXEC)
 
