@@ -15,6 +15,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <config.h>
 #include <err.h>
 #include <errno.h>
 #include <stdio.h>
@@ -150,10 +151,19 @@ static void send_message(void *buf, size_t len)
 	}
 }
 
+static int usage(int code)
+{
+	printf("Usage: %s IFACE [IFACE ...]\n", PACKAGE_NAME);
+	return code;
+}
+
 int main(int argc, char *argv[])
 {
 	int i;
 	struct igmp igmp;
+
+	if (argc < 2)
+		return usage(1);
 
 	for (i = 1; i < argc; i++)
 		open_socket(argv[i]);

@@ -3,6 +3,8 @@ Multicast Router Discovery Protocol.  The protocol is intended to be a
 way of informing IGMP/MLD snoopers on a LAN of any multicast capable
 routers.
 
+    Usage: mrdisc IFNAME [IFNAME ...]
+
 When complete, `mrdisc(8)` will be integrated in the SMCRoute, mrouted,
 and pimd multicast routing daemons.  In fairness, both the Linux and
 *BSD kernels should probably implement this instead.  When a multicast
