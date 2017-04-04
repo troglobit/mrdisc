@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <net/if.h>
 #include <netinet/ip.h>
 #include <netinet/igmp.h>
 #include <sys/types.h>
@@ -30,6 +31,59 @@
 #define IGMP_MRDISC_SOLICIT  0x31
 #define IGMP_MRDISC_TERM     0x32
 #define MC_ALL_SNOOPERS      "224.0.0.106"
+
+typedef struct {
+	int   sd;
+	char *ifname;
+} ifsock_t;
+
+size_t   ifnum = 0;
+ifsock_t iflist[100];
+
+static void open_socket(char *ifname)
+{
+	char loop;
+	int sd, val, rc;
+	struct ifreq ifr;
+	unsigned char ra[4] = { IPOPT_RA, 0x04, 0x00, 0x00 };
+
+	sd = socket(AF_INET, SOCK_RAW, IPPROTO_IGMP);
+	if (sd < 0)
+		err(1, "Cannot open socket");
+
+	val = 1;
+	rc = setsockopt(sd, IPPROTO_IP, IP_MULTICAST_TTL, &val, sizeof(val));
+	if (rc < 0)
+		err(1, "Cannot set TTL");
+
+	loop = 0;
+	rc = setsockopt(sd, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop));
+	if (rc < 0)
+		err(1, "Cannot disable MC loop");
+
+	rc = setsockopt(sd, IPPROTO_IP, IP_OPTIONS, &ra, sizeof(ra));
+	if (rc < 0)
+		err(1, "Cannot set IP OPTIONS");
+
+	memset(&ifr, 0, sizeof(ifr));
+	snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", ifname);
+	if (setsockopt(sd, SOL_SOCKET, SO_BINDTODEVICE, (void *)&ifr, sizeof(ifr)) < 0)
+		err(1, "Cannot bind socket to interface %s", ifname);
+
+	iflist[ifnum].sd = sd;
+	iflist[ifnum].ifname = ifname;
+	ifnum++;
+}
+
+static int close_socket(void)
+{
+	int i, ret = 0;
+
+	for (i = 0; i < ifnum; i++)
+		ret |= close(iflist[i].sd);
+
+	return ret;
+}
 
 static void compose_addr(struct sockaddr_in *sin, char *group)
 {
@@ -71,16 +125,21 @@ static unsigned short in_cksum (unsigned short *addr, int len)
    return answer;
 }
 
-static int send_message(int sd, void *buf, size_t len)
+static void send_message(void *buf, size_t len)
 {
 #if 1
-	size_t num;
+	int i;
 	struct sockaddr dest;
 
 	compose_addr((struct sockaddr_in *)&dest, MC_ALL_SNOOPERS);
-	num = sendto(sd, buf, len, 0, &dest, sizeof(dest));
-	if (num < 0)
-		err(1, "Cannot send Membership report message.");
+
+	for (i = 0; i < ifnum; i++) {
+		size_t num;
+
+		num = sendto(iflist[i].sd, buf, len, 0, &dest, sizeof(dest));
+		if (num < 0)
+			err(1, "Cannot send Membership report message.");
+	}
 #else
 	ssize_t num;
 	struct iovec iov[1];
@@ -126,30 +185,13 @@ static int send_message(int sd, void *buf, size_t len)
 #endif
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
-	char loop;
-	int sd, val, rc;
+	int i;
 	struct igmp igmp;
-	unsigned char ra[4] = { IPOPT_RA, 0x04, 0x00, 0x00 };
 
-	sd = socket(AF_INET, SOCK_RAW, IPPROTO_IGMP);
-	if (sd < 0)
-		err(1, "Cannot open socket");
-
-	val = 1;
-	rc = setsockopt(sd, IPPROTO_IP, IP_MULTICAST_TTL, &val, sizeof(val));
-	if (rc < 0)
-		err(1, "Cannot set TTL");
-
-	loop = 0;
-	rc = setsockopt(sd, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop));
-	if (rc < 0)
-		err(1, "Cannot disable MC loop");
-
-	rc = setsockopt(sd, IPPROTO_IP, IP_OPTIONS, &ra, sizeof(ra));
-	if (rc < 0)
-		err(1, "Cannot set IP OPTIONS");
+	for (i = 1; i < argc; i++)
+		open_socket(argv[i]);
 
 	memset(&igmp, 0, sizeof(igmp));
 	igmp.igmp_type = IGMP_MRDISC_ANNOUNCE;
@@ -157,11 +199,11 @@ int main(void)
 	igmp.igmp_cksum = in_cksum((unsigned short *)&igmp, sizeof(igmp));
 
 	while (1) {
-		send_message(sd, &igmp, sizeof(igmp));
+		send_message(&igmp, sizeof(igmp));
 		sleep(20);
 	}
 
-	return close(sd);
+	return close_socket();
 }
 
 /**
