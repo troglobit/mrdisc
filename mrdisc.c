@@ -85,7 +85,8 @@ static void open_socket(char *ifname)
 
 static int close_socket(void)
 {
-	int i, ret = 0;
+	size_t i;
+	int ret = 0;
 
 	for (i = 0; i < ifnum; i++)
 		ret |= close(iflist[i].sd);
@@ -135,13 +136,13 @@ static unsigned short in_cksum (unsigned short *addr, int len)
 
 static void send_message(void *buf, size_t len)
 {
-	int i;
+	size_t i;
 	struct sockaddr dest;
 
 	compose_addr((struct sockaddr_in *)&dest, MC_ALL_SNOOPERS);
 
 	for (i = 0; i < ifnum; i++) {
-		size_t num;
+		ssize_t num;
 
 		num = sendto(iflist[i].sd, buf, len, 0, &dest, sizeof(dest));
 		if (num < 0)
