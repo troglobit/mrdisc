@@ -21,6 +21,7 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <signal.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,6 +41,7 @@ typedef struct {
 	char *ifname;
 } ifsock_t;
 
+int      running = 1;
 size_t   ifnum = 0;
 ifsock_t iflist[100];
 
@@ -122,6 +124,19 @@ static void send_message(void *buf, size_t len)
 	}
 }
 
+static void exit_handler(int signo)
+{
+	running = 0;
+}
+
+static void signal_init(void)
+{
+	signal(SIGTERM, exit_handler);
+	signal(SIGINT,  exit_handler);
+	signal(SIGHUP,  exit_handler);
+	signal(SIGQUIT, exit_handler);
+}
+
 static int usage(int code)
 {
 	printf("\nUsage: %s [-i SEC] IFACE [IFACE ...]\n"
@@ -161,6 +176,8 @@ int main(int argc, char *argv[])
 		return usage(1);
 	}
 
+	signal_init();
+
 	for (i = optind; i < argc; i++)
 		open_socket(argv[i]);
 
@@ -169,7 +186,7 @@ int main(int argc, char *argv[])
 	igmp.igmp_code = interval;
 	igmp.igmp_cksum = in_cksum((unsigned short *)&igmp, sizeof(igmp));
 
-	while (1) {
+	while (running) {
 		send_message(&igmp, sizeof(igmp));
 		sleep(interval);
 	}
