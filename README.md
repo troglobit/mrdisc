@@ -6,9 +6,10 @@ routers.
 When complete, `mrdisc(8)` will be integrated in the SMCRoute, mrouted,
 and pimd multicast routing daemons.  In fairness, both the Linux and
 *BSD kernels should probably implement this instead.  When a multicast
-routing daemon opens a routing socket and declares a set of VIFs the
+routing daemon opens a routing socket and declares a set of VIFs, the
 kernel knows which interfaces to send IGMP/MLD discovery frames on.
-Also, both kernels have bridges with IGMP/MLD snooping support.
+Also, both kernels have bridges with IGMP/MLD snooping support that
+need this information to learn dynamic multicast router ports.
 
 You are free to use this software as you like, as long as you abide by
 the terms of the [ISC License][]
