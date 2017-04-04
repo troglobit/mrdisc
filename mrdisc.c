@@ -28,7 +28,6 @@
 #include <net/if.h>
 #include <netinet/ip.h>
 #include <netinet/igmp.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 
 #define IGMP_MRDISC_ANNOUNCE 0x30
@@ -43,6 +42,9 @@ typedef struct {
 
 size_t   ifnum = 0;
 ifsock_t iflist[100];
+
+unsigned short in_cksum(unsigned short *addr, int len);
+
 
 static void open_socket(char *ifname)
 {
@@ -102,39 +104,6 @@ static void compose_addr(struct sockaddr_in *sin, char *group)
 	memset(sin, 0, sizeof(*sin));
 	sin->sin_family      = AF_INET;
 	sin->sin_addr.s_addr = inet_addr(group);
-}
-
-static unsigned short in_cksum (unsigned short *addr, int len)
-{
-   register int sum = 0;
-   u_short answer = 0;
-   register u_short *w = addr;
-   register int nleft = len;
-
-   /*
-    * Our algorithm is simple, using a 32 bit accumulator (sum), we add
-    * sequential 16 bit words to it, and at the end, fold back all the
-    * carry bits from the top 16 bits into the lower 16 bits.
-    */
-   while (nleft > 1)
-   {
-      sum += *w++;
-      nleft -= 2;
-   }
-
-   /* mop up an odd byte, if necessary */
-   if (nleft == 1)
-   {
-      *(u_char *) (&answer) = *(u_char *) w;
-      sum += answer;
-   }
-
-   /* add back carry outs from top 16 bits to low 16 bits */
-   sum = (sum >> 16) + (sum & 0xffff);  /* add hi 16 to low 16 */
-   sum += (sum >> 16);           /* add carry */
-   answer = ~sum;                /* truncate to 16 bits */
-
-   return answer;
 }
 
 static void send_message(void *buf, size_t len)
