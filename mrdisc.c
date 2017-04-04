@@ -191,6 +191,9 @@ int main(int argc, char *argv[])
 		sleep(interval);
 	}
 
+	igmp.igmp_type = IGMP_MRDISC_TERM;
+	send_message(&igmp, sizeof(igmp));
+
 	return close_socket();
 }
 
