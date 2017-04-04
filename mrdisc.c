@@ -18,9 +18,11 @@
 #include <config.h>
 #include <err.h>
 #include <errno.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
 #include <net/if.h>
@@ -153,29 +155,54 @@ static void send_message(void *buf, size_t len)
 
 static int usage(int code)
 {
-	printf("Usage: %s IFACE [IFACE ...]\n", PACKAGE_NAME);
+	printf("\nUsage: %s [-i SEC] IFACE [IFACE ...]\n"
+	       "\n"
+	       "    -h        This help text\n"
+	       "    -i SEC    Announce interval, 4-180 sec, default 20 sec\n"
+	       "\n"
+	       "Bug report address: %-40s\n\n", PACKAGE_NAME, PACKAGE_BUGREPORT);
+
 	return code;
 }
 
 int main(int argc, char *argv[])
 {
-	int i;
+	int i, c;
+	int interval = 20;
 	struct igmp igmp;
 
-	if (argc < 2)
-		return usage(1);
+	while ((c = getopt(argc, argv, "hi:")) != EOF) {
+		switch (c) {
+		case 'h':
+			return usage(0);
 
-	for (i = 1; i < argc; i++)
+		case 'i':
+			interval = atoi(optarg);
+			if (interval < 4 || interval > 180)
+				errx(1, "Invalid announcement interval [4,180]");
+			break;
+
+		default:
+			break;
+		}
+	}
+
+	if (optind >= argc) {
+		warnx("Not enough arguments");
+		return usage(1);
+	}
+
+	for (i = optind; i < argc; i++)
 		open_socket(argv[i]);
 
 	memset(&igmp, 0, sizeof(igmp));
 	igmp.igmp_type = IGMP_MRDISC_ANNOUNCE;
-	igmp.igmp_code = 20;	/* 4-180 sec, default 20 sec */
+	igmp.igmp_code = interval;
 	igmp.igmp_cksum = in_cksum((unsigned short *)&igmp, sizeof(igmp));
 
 	while (1) {
 		send_message(&igmp, sizeof(igmp));
-		sleep(20);
+		sleep(interval);
 	}
 
 	return close_socket();
