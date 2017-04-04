@@ -16,6 +16,7 @@
  */
 
 #include <err.h>
+#include <errno.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdint.h>
@@ -51,6 +52,18 @@ static void open_socket(char *ifname)
 	if (sd < 0)
 		err(1, "Cannot open socket");
 
+	memset(&ifr, 0, sizeof(ifr));
+	snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", ifname);
+	if (setsockopt(sd, SOL_SOCKET, SO_BINDTODEVICE, (void *)&ifr, sizeof(ifr)) < 0) {
+		if (ENODEV == errno) {
+			warnx("Not a valid interface, %s, skipping ...", ifname);
+			close(sd);
+			return;
+		}
+
+		err(1, "Cannot bind socket to interface %s", ifname);
+	}
+
 	val = 1;
 	rc = setsockopt(sd, IPPROTO_IP, IP_MULTICAST_TTL, &val, sizeof(val));
 	if (rc < 0)
@@ -64,11 +77,6 @@ static void open_socket(char *ifname)
 	rc = setsockopt(sd, IPPROTO_IP, IP_OPTIONS, &ra, sizeof(ra));
 	if (rc < 0)
 		err(1, "Cannot set IP OPTIONS");
-
-	memset(&ifr, 0, sizeof(ifr));
-	snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", ifname);
-	if (setsockopt(sd, SOL_SOCKET, SO_BINDTODEVICE, (void *)&ifr, sizeof(ifr)) < 0)
-		err(1, "Cannot bind socket to interface %s", ifname);
 
 	iflist[ifnum].sd = sd;
 	iflist[ifnum].ifname = ifname;
