@@ -108,17 +108,23 @@ static void compose_addr(struct sockaddr_in *sin, char *group)
 	sin->sin_addr.s_addr = inet_addr(group);
 }
 
-static void send_message(void *buf, size_t len)
+static void send_message(uint8_t type, uint8_t interval)
 {
 	size_t i;
+	struct igmp igmp;
 	struct sockaddr dest;
+
+	memset(&igmp, 0, sizeof(igmp));
+	igmp.igmp_type = type;
+	igmp.igmp_code = interval;
+	igmp.igmp_cksum = in_cksum((unsigned short *)&igmp, sizeof(igmp));
 
 	compose_addr((struct sockaddr_in *)&dest, MC_ALL_SNOOPERS);
 
 	for (i = 0; i < ifnum; i++) {
 		ssize_t num;
 
-		num = sendto(iflist[i].sd, buf, len, 0, &dest, sizeof(dest));
+		num = sendto(iflist[i].sd, &igmp, sizeof(igmp), 0, &dest, sizeof(dest));
 		if (num < 0)
 			err(1, "Cannot send Membership report message.");
 	}
@@ -153,7 +159,6 @@ int main(int argc, char *argv[])
 {
 	int i, c;
 	int interval = 20;
-	struct igmp igmp;
 
 	while ((c = getopt(argc, argv, "hi:")) != EOF) {
 		switch (c) {
@@ -181,18 +186,12 @@ int main(int argc, char *argv[])
 	for (i = optind; i < argc; i++)
 		open_socket(argv[i]);
 
-	memset(&igmp, 0, sizeof(igmp));
-	igmp.igmp_type = IGMP_MRDISC_ANNOUNCE;
-	igmp.igmp_code = interval;
-	igmp.igmp_cksum = in_cksum((unsigned short *)&igmp, sizeof(igmp));
-
 	while (running) {
-		send_message(&igmp, sizeof(igmp));
+		send_message(IGMP_MRDISC_ANNOUNCE, interval);
 		sleep(interval);
 	}
 
-	igmp.igmp_type = IGMP_MRDISC_TERM;
-	send_message(&igmp, sizeof(igmp));
+	send_message(IGMP_MRDISC_TERM, 0);
 
 	return close_socket();
 }
