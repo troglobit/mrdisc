@@ -19,11 +19,13 @@
 #include <err.h>
 #include <errno.h>
 #include <getopt.h>
+#include <poll.h>
 #include <stdio.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <net/if.h>
@@ -57,7 +59,7 @@ static void open_socket(char *ifname)
 	struct ifreq ifr;
 	unsigned char ra[4] = { IPOPT_RA, 0x04, 0x00, 0x00 };
 
-	sd = socket(AF_INET, SOCK_RAW, IPPROTO_IGMP);
+	sd = socket(AF_INET, SOCK_RAW | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_IGMP);
 	if (sd < 0)
 		err(1, "Cannot open socket");
 
@@ -132,6 +134,51 @@ static void send_message(uint8_t type, uint8_t interval)
 	}
 }
 
+static void recv_message(int ifi)
+{
+	struct igmp igmp;
+
+	memset(&igmp, 0, sizeof(igmp));
+	if (read(iflist[ifi].sd, &igmp, sizeof(igmp)) != sizeof(igmp))
+		return;
+
+	printf("Received IGMP type 0x%02x\n", igmp.igmp_type);
+}
+
+static void wait_message(uint8_t interval)
+{
+	size_t i;
+	int num = 1;
+	time_t end = time(NULL) + interval;
+	struct pollfd pfd[MAX_NUM_IFACES];
+
+	for (i = 0; i < ifnum; i++) {
+		pfd[i].fd = iflist[i].sd;
+		pfd[i].events = POLLIN | POLLHUP;
+	}
+
+again:
+	while (1) {
+		num = poll(pfd, ifnum, (end - time(NULL)) * 1000);
+		if (num < 0) {
+			if (EINTR == errno)
+				continue;
+
+			err(1, "Unrecoverable error");
+		}
+
+		if (num == 0)
+			break;
+
+		for (i = 0; num > 0 && i < ifnum; i++) {
+			if (pfd[i].revents & POLLIN) {
+				recv_message(i);
+				num--;
+			}
+		}
+	}
+}
+
 static void exit_handler(int signo)
 {
 	running = 0;
@@ -190,7 +237,7 @@ int main(int argc, char *argv[])
 
 	while (running) {
 		send_message(IGMP_MRDISC_ANNOUNCE, interval);
-		sleep(interval);
+		wait_message(interval);
 	}
 
 	send_message(IGMP_MRDISC_TERM, 0);
