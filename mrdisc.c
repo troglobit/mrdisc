@@ -20,21 +20,23 @@
 #include <errno.h>
 #include <getopt.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <netinet/ip.h>
 #include <netinet/igmp.h>
 #include <sys/socket.h>
 
+#define MAX_NUM_IFACES       100
+#define MC_ALL_SNOOPERS      "224.0.0.106"
+
 #define IGMP_MRDISC_ANNOUNCE 0x30
 #define IGMP_MRDISC_SOLICIT  0x31
 #define IGMP_MRDISC_TERM     0x32
-#define MC_ALL_SNOOPERS      "224.0.0.106"
 
 typedef struct {
 	int   sd;
@@ -43,7 +45,7 @@ typedef struct {
 
 int      running = 1;
 size_t   ifnum = 0;
-ifsock_t iflist[100];
+ifsock_t iflist[MAX_NUM_IFACES];
 
 unsigned short in_cksum(unsigned short *addr, int len);
 
@@ -158,7 +160,7 @@ static int usage(int code)
 int main(int argc, char *argv[])
 {
 	int i, c;
-	int interval = 20;
+	uint8_t interval = 20;
 
 	while ((c = getopt(argc, argv, "hi:")) != EOF) {
 		switch (c) {
@@ -166,7 +168,7 @@ int main(int argc, char *argv[])
 			return usage(0);
 
 		case 'i':
-			interval = atoi(optarg);
+			interval = (uint8_t)atoi(optarg);
 			if (interval < 4 || interval > 180)
 				errx(1, "Invalid announcement interval [4,180]");
 			break;
