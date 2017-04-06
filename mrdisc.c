@@ -51,12 +51,12 @@ ifsock_t iflist[MAX_NUM_IFACES];
 
 unsigned short in_cksum(unsigned short *addr, int len);
 
-
 static void open_socket(char *ifname)
 {
 	char loop;
 	int sd, val, rc;
 	struct ifreq ifr;
+	struct ip_mreqn mreq;
 	unsigned char ra[4] = { IPOPT_RA, 0x04, 0x00, 0x00 };
 
 	sd = socket(AF_INET, SOCK_RAW | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_IGMP);
@@ -74,6 +74,12 @@ static void open_socket(char *ifname)
 
 		err(1, "Cannot bind socket to interface %s", ifname);
 	}
+
+	memset(&mreq, 0, sizeof(mreq));
+	mreq.imr_multiaddr.s_addr = inet_addr(MC_ALL_SNOOPERS);
+	mreq.imr_ifindex = if_nametoindex(ifname);
+        if (setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)))
+		err(1, "Failed joining group %s", MC_ALL_SNOOPERS);
 
 	val = 1;
 	rc = setsockopt(sd, IPPROTO_IP, IP_MULTICAST_TTL, &val, sizeof(val));
@@ -130,19 +136,27 @@ static void send_message(uint8_t type, uint8_t interval)
 
 		num = sendto(iflist[i].sd, &igmp, sizeof(igmp), 0, &dest, sizeof(dest));
 		if (num < 0)
-			err(1, "Cannot send Membership report message.");
+			err(1, "Cannot send IGMP control message");
 	}
 }
 
 static void recv_message(int ifi)
 {
-	struct igmp igmp;
+	char buf[1530];
+	ssize_t num;
+	struct ip *ip;
+	struct igmp *igmp;
 
-	memset(&igmp, 0, sizeof(igmp));
-	if (read(iflist[ifi].sd, &igmp, sizeof(igmp)) != sizeof(igmp))
+	memset(buf, 0, sizeof(buf));
+	num = read(iflist[ifi].sd, buf, sizeof(buf));
+	if (num < 0) {
+		warn("Failed reading from interface %s", iflist[ifi].ifname);
 		return;
+	}
 
-	printf("Received IGMP type 0x%02x\n", igmp.igmp_type);
+	ip = (struct ip *)buf;
+	igmp = (struct igmp *)(buf + (ip->ip_hl << 2));
+	printf("Received IGMP type 0x%02x\n", igmp->igmp_type);
 }
 
 static void wait_message(uint8_t interval)
@@ -154,7 +168,7 @@ static void wait_message(uint8_t interval)
 
 	for (i = 0; i < ifnum; i++) {
 		pfd[i].fd = iflist[i].sd;
-		pfd[i].events = POLLIN | POLLHUP;
+		pfd[i].events = POLLIN | POLLPRI | POLLHUP;
 	}
 
 again:
@@ -162,7 +176,7 @@ again:
 		num = poll(pfd, ifnum, (end - time(NULL)) * 1000);
 		if (num < 0) {
 			if (EINTR == errno)
-				continue;
+				break;
 
 			err(1, "Unrecoverable error");
 		}
@@ -171,6 +185,7 @@ again:
 			break;
 
 		for (i = 0; num > 0 && i < ifnum; i++) {
+			printf("Checking revents 0x%08x on %s\n", pfd[i].revents, iflist[i].ifname);
 			if (pfd[i].revents & POLLIN) {
 				recv_message(i);
 				num--;
