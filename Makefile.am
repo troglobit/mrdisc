@@ -1,7 +1,9 @@
-sbin_PROGRAMS  = mrdisc
-mrdisc_SOURCES = mrdisc.c cksum.c
-mrdisc_CFLAGS  = -W -Wall -Wextra -Wno-unused
-EXTRA_DIST     = README.md LICENSE
+bin_PROGRAMS    = solicit
+solicit_SOURCES = solicit.c cksum.c
+sbin_PROGRAMS   = mrdisc
+mrdisc_SOURCES  = mrdisc.c cksum.c
+mrdisc_CFLAGS   = -W -Wall -Wextra -Wno-unused
+EXTRA_DIST      = README.md LICENSE
 
 release: distcheck
 	@for file in $(DIST_ARCHIVES); do	\
