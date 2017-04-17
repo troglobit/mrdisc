@@ -49,6 +49,7 @@ int      running = 1;
 uint8_t  interval = 20;
 size_t   ifnum = 0;
 ifsock_t iflist[MAX_NUM_IFACES];
+char     version_info[] = PACKAGE_NAME " v" PACKAGE_VERSION;
 
 unsigned short in_cksum(unsigned short *addr, int len);
 
@@ -222,6 +223,7 @@ static int usage(int code)
 	       "\n"
 	       "    -h        This help text\n"
 	       "    -i SEC    Announce interval, 4-180 sec, default 20 sec\n"
+	       "    -v        Program version\n"
 	       "\n"
 	       "Bug report address: %-40s\n\n", PACKAGE_NAME, PACKAGE_BUGREPORT);
 
@@ -232,7 +234,7 @@ int main(int argc, char *argv[])
 {
 	int i, c;
 
-	while ((c = getopt(argc, argv, "hi:")) != EOF) {
+	while ((c = getopt(argc, argv, "hi:v")) != EOF) {
 		switch (c) {
 		case 'h':
 			return usage(0);
@@ -242,6 +244,10 @@ int main(int argc, char *argv[])
 			if (interval < 4 || interval > 180)
 				errx(1, "Invalid announcement interval [4,180]");
 			break;
+
+		case 'v':
+			fprintf(stderr, "%s\n", version_info);
+			return 0;
 
 		default:
 			break;
