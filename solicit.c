@@ -57,12 +57,12 @@ static int open_socket(char *ifname)
 		err(1, "Cannot bind socket to interface %s", ifname);
 	}
 
-	struct ip_mreqn mreq;
-	memset(&mreq, 0, sizeof(mreq));
-	mreq.imr_multiaddr.s_addr = inet_addr(MC_ALL_SNOOPERS);
-	mreq.imr_ifindex = if_nametoindex(ifname);
-        if (setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)))
-		err(1, "Failed joining group %s", MC_ALL_SNOOPERS);
+	/* struct ip_mreqn mreq; */
+	/* memset(&mreq, 0, sizeof(mreq)); */
+	/* mreq.imr_multiaddr.s_addr = inet_addr(MC_ALL_SNOOPERS); */
+	/* mreq.imr_ifindex = if_nametoindex(ifname); */
+        /* if (setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq))) */
+	/* 	err(1, "Failed joining group %s", MC_ALL_SNOOPERS); */
 
 	val = 1;
 	rc = setsockopt(sd, IPPROTO_IP, IP_MULTICAST_TTL, &val, sizeof(val));
