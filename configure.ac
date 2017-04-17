@@ -1,4 +1,4 @@
-AC_INIT([mrdisc],[1.0-beta1],[https://github.com/troglobit/mrdisc/issues])
+AC_INIT([mrdisc],[1.0-rc1],[https://github.com/troglobit/mrdisc/issues])
 AM_INIT_AUTOMAKE([1.11 foreign])
 
 AC_CONFIG_SRCDIR([mrdisc.c])
