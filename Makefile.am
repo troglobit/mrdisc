@@ -1,9 +1,12 @@
-bin_PROGRAMS    = solicit
+AM_CFLAGS	= -W -Wall -Wextra -Wno-unused
+DISTCLEANFILES	= *~ DEADJOE semantic.cache *.gdb *.elf core core.* *.d
+doc_DATA	= README.md LICENSE
+EXTRA_DIST	= README.md LICENSE
+
+bin_PROGRAMS	= solicit
 solicit_SOURCES = solicit.c cksum.c
-sbin_PROGRAMS   = mrdisc
-mrdisc_SOURCES  = mrdisc.c cksum.c
-mrdisc_CFLAGS   = -W -Wall -Wextra -Wno-unused
-EXTRA_DIST      = README.md LICENSE
+sbin_PROGRAMS	= mrdisc
+mrdisc_SOURCES	= mrdisc.c cksum.c
 
 release: distcheck
 	@for file in $(DIST_ARCHIVES); do	\
