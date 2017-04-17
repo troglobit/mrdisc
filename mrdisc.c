@@ -46,6 +46,7 @@ typedef struct {
 } ifsock_t;
 
 int      running = 1;
+uint8_t  interval = 20;
 size_t   ifnum = 0;
 ifsock_t iflist[MAX_NUM_IFACES];
 
@@ -164,7 +165,8 @@ static void recv_message(int ifi)
 
 	ip = (struct ip *)buf;
 	igmp = (struct igmp *)(buf + (ip->ip_hl << 2));
-	printf("Received IGMP type 0x%02x\n", igmp->igmp_type);
+	if (igmp->igmp_type == IGMP_MRDISC_SOLICIT)
+		send_message(ifi, IGMP_MRDISC_ANNOUNCE, interval);
 }
 
 static void wait_message(uint8_t interval)
@@ -193,7 +195,6 @@ again:
 			break;
 
 		for (i = 0; num > 0 && i < ifnum; i++) {
-			printf("Checking revents 0x%08x on %s\n", pfd[i].revents, iflist[i].ifname);
 			if (pfd[i].revents & POLLIN) {
 				recv_message(i);
 				num--;
@@ -230,7 +231,6 @@ static int usage(int code)
 int main(int argc, char *argv[])
 {
 	int i, c;
-	uint8_t interval = 20;
 
 	while ((c = getopt(argc, argv, "hi:")) != EOF) {
 		switch (c) {
