@@ -24,5 +24,6 @@ depcomp
 install-sh
 missing
 mrdisc
+solicit
 stamp-h1
 test-driver
