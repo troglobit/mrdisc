@@ -15,7 +15,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <config.h>
 #include <err.h>
 #include <errno.h>
 #include <stdio.h>
@@ -57,22 +56,10 @@ static int open_socket(char *ifname)
 		err(1, "Cannot bind socket to interface %s", ifname);
 	}
 
-	/* struct ip_mreqn mreq; */
-	/* memset(&mreq, 0, sizeof(mreq)); */
-	/* mreq.imr_multiaddr.s_addr = inet_addr(MC_ALL_SNOOPERS); */
-	/* mreq.imr_ifindex = if_nametoindex(ifname); */
-        /* if (setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq))) */
-	/* 	err(1, "Failed joining group %s", MC_ALL_SNOOPERS); */
-
 	val = 1;
 	rc = setsockopt(sd, IPPROTO_IP, IP_MULTICAST_TTL, &val, sizeof(val));
 	if (rc < 0)
 		err(1, "Cannot set TTL");
-
-	loop = 0;
-	rc = setsockopt(sd, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop));
-	if (rc < 0)
-		err(1, "Cannot disable MC loop");
 
 	rc = setsockopt(sd, IPPROTO_IP, IP_OPTIONS, &ra, sizeof(ra));
 	if (rc < 0)
@@ -113,7 +100,7 @@ int main(int argc, char *argv[])
 	int sd;
 
 	if (argc < 2)
-		return 1;
+		errx(1, "Usage: %s IFNAME", argv[0]);
 
 	sd = open_socket(argv[1]);
 	if (sd < 0)
