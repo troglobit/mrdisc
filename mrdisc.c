@@ -118,9 +118,9 @@ static void compose_addr(struct sockaddr_in *sin, char *group)
 	sin->sin_addr.s_addr = inet_addr(group);
 }
 
-static void send_message(uint8_t type, uint8_t interval)
+static int send_message(int ifi, uint8_t type, uint8_t interval)
 {
-	size_t i;
+	ssize_t num;
 	struct igmp igmp;
 	struct sockaddr dest;
 
@@ -131,12 +131,20 @@ static void send_message(uint8_t type, uint8_t interval)
 
 	compose_addr((struct sockaddr_in *)&dest, MC_ALL_SNOOPERS);
 
-	for (i = 0; i < ifnum; i++) {
-		ssize_t num;
+	num = sendto(iflist[ifi].sd, &igmp, sizeof(igmp), 0, &dest, sizeof(dest));
+	if (num < 0)
+		return 1;
 
-		num = sendto(iflist[i].sd, &igmp, sizeof(igmp), 0, &dest, sizeof(dest));
-		if (num < 0)
-			err(1, "Cannot send IGMP control message");
+	return 0;
+}
+
+static void announce(uint8_t type, uint8_t interval)
+{
+	size_t i;
+
+	for (i = 0; i < ifnum; i++) {
+		if (send_message(i, type, interval))
+			warn("Failed sending IGMP control message 0x%x on %s", type, iflist[i].ifname);
 	}
 }
 
@@ -251,11 +259,11 @@ int main(int argc, char *argv[])
 		open_socket(argv[i]);
 
 	while (running) {
-		send_message(IGMP_MRDISC_ANNOUNCE, interval);
+		announce(IGMP_MRDISC_ANNOUNCE, interval);
 		wait_message(interval);
 	}
 
-	send_message(IGMP_MRDISC_TERM, 0);
+	announce(IGMP_MRDISC_TERM, 0);
 
 	return close_socket();
 }
