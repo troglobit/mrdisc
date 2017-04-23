@@ -6,7 +6,7 @@ EXTRA_DIST	= README.md LICENSE
 bin_PROGRAMS	= solicit
 solicit_SOURCES = solicit.c cksum.c
 sbin_PROGRAMS	= mrdisc
-mrdisc_SOURCES	= mrdisc.c cksum.c
+mrdisc_SOURCES	= mrdisc.c cksum.c if.c if.h inet.c inet.h
 
 release: distcheck
 	@for file in $(DIST_ARCHIVES); do	\
