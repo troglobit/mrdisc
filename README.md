@@ -22,5 +22,5 @@ the terms of the [ISC License][License].
 [RFC4286]:       https://tools.ietf.org/html/rfc4286
 [License]:       https://en.wikipedia.org/wiki/ISC_license
 [License Badge]: https://img.shields.io/badge/License-ISC-blue.svg
-[Travis]:        https://travis-ci.org/troglobit/netcalc
-[Travis Status]: https://travis-ci.org/troglobit/netcalc.png?branch=master
+[Travis]:        https://travis-ci.org/troglobit/mrdisc
+[Travis Status]: https://travis-ci.org/troglobit/mrdisc.png?branch=master
