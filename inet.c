@@ -31,8 +31,6 @@
 
 #define MC_ALL_SNOOPERS      "224.0.0.106"
 
-unsigned short in_cksum(unsigned short *addr, int len);
-
 
 int inet_open(char *ifname)
 {
@@ -103,7 +101,7 @@ int inet_send(int sd, uint8_t type, uint8_t interval)
 	memset(&igmp, 0, sizeof(igmp));
 	igmp.igmp_type = type;
 	igmp.igmp_code = interval;
-	igmp.igmp_cksum = in_cksum((unsigned short *)&igmp, sizeof(igmp));
+	igmp.igmp_cksum = 0;
 
 	compose_addr((struct sockaddr_in *)&dest, MC_ALL_SNOOPERS);
 
