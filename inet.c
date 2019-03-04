@@ -29,6 +29,7 @@
 
 #include "inet.h"
 
+#define MC_ALL_ROUTERS       "224.0.0.2"
 #define MC_ALL_SNOOPERS      "224.0.0.106"
 
 
@@ -57,10 +58,10 @@ int inet_open(char *ifname)
 	}
 
 	memset(&mreq, 0, sizeof(mreq));
-	mreq.imr_multiaddr.s_addr = inet_addr(MC_ALL_SNOOPERS);
+	mreq.imr_multiaddr.s_addr = inet_addr(MC_ALL_ROUTERS);
 	mreq.imr_ifindex = if_nametoindex(ifname);
         if (setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)))
-		err(1, "Failed joining group %s", MC_ALL_SNOOPERS);
+		err(1, "Failed joining group %s", MC_ALL_ROUTERS);
 
 	val = 1;
 	rc = setsockopt(sd, IPPROTO_IP, IP_MULTICAST_TTL, &val, sizeof(val));
