@@ -46,9 +46,11 @@ static void signal_init(void)
 
 static int usage(int code)
 {
-	printf("\nUsage: %s [-i SEC] IFACE [IFACE ...]\n"
+	printf("\nUsage: %s [-4|-6] [-i SEC] IFACE [IFACE ...]\n"
 	       "\n"
 	       "    -h        This help text\n"
+	       "    -4        Use IPv4 only\n"
+	       "    -6        Use IPv6 only\n"
 	       "    -i SEC    Announce interval, 4-180 sec, default 20 sec\n"
 	       "    -v        Program version\n"
 	       "\n"
@@ -59,9 +61,12 @@ static int usage(int code)
 
 int main(int argc, char *argv[])
 {
+	int v4 = 1;
+	int v6 = 1;
 	int c;
+	int ret;
 
-	while ((c = getopt(argc, argv, "hi:v")) != EOF) {
+	while ((c = getopt(argc, argv, "hi:v46")) != EOF) {
 		switch (c) {
 		case 'h':
 			return usage(0);
@@ -75,10 +80,21 @@ int main(int argc, char *argv[])
 		case 'v':
 			fprintf(stderr, "%s\n", version_info);
 			return 0;
+		case '4':
+			v6 = 0;
+			break;
+		case '6':
+			v4 = 0;
+			break;
 
 		default:
 			return usage(1);
 		}
+	}
+
+	if (!v4 && !v6) {
+		warnx("-4 and -6 are exclusive");
+		return usage(1);
 	}
 
 	if (optind >= argc) {
@@ -87,10 +103,18 @@ int main(int argc, char *argv[])
 	}
 
 	signal_init();
-	if_init(&argv[optind], argc - optind);
+
+	if (v4)
+		if_init4(&argv[optind], argc - optind);
+	if (v6)
+		if_init6(&argv[optind], argc - optind);
 
 	while (running) {
-		if_send(interval);
+		if (v4)
+			if_send4(interval);
+		if (v6)
+			if_send6(interval);
+
 		if_poll(interval);
 	}
 
