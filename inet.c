@@ -92,6 +92,17 @@ static void compose_addr(struct sockaddr_in *sin, char *group)
 	sin->sin_addr.s_addr = inet_addr(group);
 }
 
+void inet_mrd_set_csum(struct igmp *igmp)
+{
+	u_int32_t sum = 0;
+	u_int16_t *p = (u_int16_t *)igmp;
+
+	sum = ntohs(p[0]) + ntohs(p[1]) + ntohs(p[2]) + ntohs(p[3]);
+	sum = (sum % 0x10000) + (sum / 0x10000);
+
+	igmp->igmp_cksum = htons(((u_int16_t)sum) ^ 0xffff);
+}
+
 int inet_send(int sd, uint8_t type, uint8_t interval)
 {
 	ssize_t num;
@@ -104,6 +115,7 @@ int inet_send(int sd, uint8_t type, uint8_t interval)
 	igmp.igmp_cksum = 0;
 
 	compose_addr((struct sockaddr_in *)&dest, MC_ALL_SNOOPERS);
+	inet_mrd_set_csum(&igmp);
 
 	num = sendto(sd, &igmp, sizeof(igmp), 0, &dest, sizeof(dest));
 	if (num < 0)
