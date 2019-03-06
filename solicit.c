@@ -26,7 +26,7 @@
 #include <netinet/igmp.h>
 #include <sys/socket.h>
 
-#define MC_ALL_SNOOPERS      "224.0.0.106"
+#define MC_ALL_ROUTERS       "224.0.0.2"
 #define IGMP_MRDISC_ANNOUNCE 0x30
 #define IGMP_MRDISC_SOLICIT  0x31
 #define IGMP_MRDISC_TERM     0x32
@@ -84,7 +84,7 @@ static int send_message(int sd, uint8_t type, uint8_t interval)
 	igmp.igmp_code = interval;
 	igmp.igmp_cksum = 0;
 
-	compose_addr((struct sockaddr_in *)&dest, MC_ALL_SNOOPERS);
+	compose_addr((struct sockaddr_in *)&dest, MC_ALL_ROUTERS);
 
 	num = sendto(sd, &igmp, sizeof(igmp), 0, &dest, sizeof(dest));
 	if (num < 0)
