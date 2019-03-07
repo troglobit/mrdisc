@@ -31,6 +31,8 @@
 #define IGMP_MRDISC_SOLICIT  0x31
 #define IGMP_MRDISC_TERM     0x32
 
+uint16_t in_cksum(uint16_t *p, size_t len);
+
 static int open_socket(char *ifname)
 {
 	unsigned char ra[4] = { IPOPT_RA, 0x04, 0x00, 0x00 };
@@ -82,7 +84,7 @@ static int send_message(int sd, uint8_t type, uint8_t interval)
 	memset(&igmp, 0, sizeof(igmp));
 	igmp.igmp_type = type;
 	igmp.igmp_code = interval;
-	igmp.igmp_cksum = 0;
+	igmp.igmp_cksum = in_cksum((uint16_t *)&igmp, sizeof(igmp) / 2);
 
 	compose_addr((struct sockaddr_in *)&dest, MC_ALL_ROUTERS);
 

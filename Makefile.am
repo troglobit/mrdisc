@@ -4,7 +4,7 @@ doc_DATA	= README.md LICENSE
 EXTRA_DIST	= README.md LICENSE
 
 bin_PROGRAMS	= solicit
-solicit_SOURCES = solicit.c
+solicit_SOURCES = solicit.c common.c
 sbin_PROGRAMS	= mrdisc
 mrdisc_SOURCES	= mrdisc.c common.c if.c if.h inet.c inet.h
 
