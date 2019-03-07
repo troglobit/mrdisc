@@ -32,6 +32,7 @@
 #define MC_ALL_ROUTERS       "224.0.0.2"
 #define MC_ALL_SNOOPERS      "224.0.0.106"
 
+uint16_t in_cksum(uint16_t *p, size_t len);
 
 int inet_open(char *ifname)
 {
@@ -93,17 +94,6 @@ static void compose_addr(struct sockaddr_in *sin, char *group)
 	sin->sin_addr.s_addr = inet_addr(group);
 }
 
-void inet_mrd_set_csum(struct igmp *igmp)
-{
-	u_int32_t sum = 0;
-	u_int16_t *p = (u_int16_t *)igmp;
-
-	sum = ntohs(p[0]) + ntohs(p[1]) + ntohs(p[2]) + ntohs(p[3]);
-	sum = (sum % 0x10000) + (sum / 0x10000);
-
-	igmp->igmp_cksum = htons(((u_int16_t)sum) ^ 0xffff);
-}
-
 int inet_send(int sd, uint8_t type, uint8_t interval)
 {
 	ssize_t num;
@@ -113,10 +103,9 @@ int inet_send(int sd, uint8_t type, uint8_t interval)
 	memset(&igmp, 0, sizeof(igmp));
 	igmp.igmp_type = type;
 	igmp.igmp_code = interval;
-	igmp.igmp_cksum = 0;
+	igmp.igmp_cksum = in_cksum((uint16_t *)&igmp, sizeof(igmp) / 2);
 
 	compose_addr((struct sockaddr_in *)&dest, MC_ALL_SNOOPERS);
-	inet_mrd_set_csum(&igmp);
 
 	num = sendto(sd, &igmp, sizeof(igmp), 0, &dest, sizeof(dest));
 	if (num < 0)
