@@ -33,10 +33,11 @@
 
 static int open_socket(char *ifname)
 {
-	char loop;
-	int sd, val, rc;
-	struct ifreq ifr;
 	unsigned char ra[4] = { IPOPT_RA, 0x04, 0x00, 0x00 };
+	struct ifreq ifr;
+	char loop;
+	int val = 1;
+	int sd, rc;
 
 	sd = socket(AF_INET, SOCK_RAW | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_IGMP);
 	if (sd < 0)
@@ -54,7 +55,6 @@ static int open_socket(char *ifname)
 		err(1, "Cannot bind socket to interface %s", ifname);
 	}
 
-	val = 1;
 	rc = setsockopt(sd, IPPROTO_IP, IP_MULTICAST_TTL, &val, sizeof(val));
 	if (rc < 0)
 		err(1, "Cannot set TTL");
@@ -75,9 +75,9 @@ static void compose_addr(struct sockaddr_in *sin, char *group)
 
 static int send_message(int sd, uint8_t type, uint8_t interval)
 {
-	ssize_t num;
-	struct igmp igmp;
 	struct sockaddr dest;
+	struct igmp igmp;
+	ssize_t num;
 
 	memset(&igmp, 0, sizeof(igmp));
 	igmp.igmp_type = type;
