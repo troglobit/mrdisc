@@ -1,4 +1,4 @@
-[![License Badge][]][License] [![Travis Status][]][Travis]
+[![License Badge][]][License] [![GitHub Status][]][GitHub]
 
 `mrdisc(8)` is a UNIX compatible implementation of [RFC4286][], the
 Multicast Router Discovery Protocol.  It is intended to be a way of
@@ -22,5 +22,5 @@ the terms of the [ISC License][License].
 [RFC4286]:       https://tools.ietf.org/html/rfc4286
 [License]:       https://en.wikipedia.org/wiki/ISC_license
 [License Badge]: https://img.shields.io/badge/License-ISC-blue.svg
-[Travis]:        https://travis-ci.org/troglobit/mrdisc
-[Travis Status]: https://travis-ci.org/troglobit/mrdisc.png?branch=master
+[GitHub]:        https://github.com/troglobit/mrdisc/actions/workflows/build.yml/
+[GitHub Status]: https://github.com/troglobit/mrdisc/actions/workflows/build.yml/badge.svg
